@@ -7,14 +7,14 @@ knNextWord <- function(text, ngram = 3, resultnumber = 10, allgram = allgramData
     inputWords <- tail(unlist(strsplit(text, split = " ")), ticker - 1)
     if(length(inputWords) < ticker - 1) {ngram = ticker = length(inputWords) + 1}
     if(length(inputWords) == 0) {ngram = ticker = 2}
-    while(ticker > 1) {
+    while(nrow(answer) < 20) {
         inputhistory <- paste(inputWords, collapse = " ") #words up to the last word
         inputremainder = ifelse(ticker > 2, str_remove(inputhistory,'[A-Za-z]+ '), str_remove(inputhistory, '[A-Za-z]+'))
         
         if(ticker == ngram) {
             gram = allgram[which(gram_number == ticker & history == inputhistory),]
             if(nrow(gram) > 0) {
-                gram[, prob := hoFirstTerm + hoLambda * loFirstTerm]
+                gram[, prob := hoFirstTerm]
                 answer = gram[,.(finalWord, prob)]
                 lambda <- head(gram$hoLambda,1)
             }
