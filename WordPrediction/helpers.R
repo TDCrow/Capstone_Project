@@ -1,6 +1,7 @@
 knNextWord <- function(text, ngram = 3, resultnumber = 10, allgram = allgramData) {
     allgram <- data.table(allgram)
     text <- tolower(text)
+    text <- str_replace_all(text, "[^[:alnum:]]", " ")
     ticker <- ngram
     answer <- data.frame()
     lambda <- 1
