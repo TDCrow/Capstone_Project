@@ -3,7 +3,7 @@ library(stringr); library(data.table)
 #k = 0 is MLE estimation
 #k = 1 is laplace smoothing
 #k = delta is Lidstone smoothing
-V = nrow(mongramData)
+#V = nrow(mongramData)
 simpleSmoothing <- function(data, k = 1){
     data %>%
         group_by(history) %>%
@@ -41,7 +41,7 @@ beta <- function(data) {
         ungroup()
 }
 
-#kboPrediction <- function(text, ngram = 3) {
+kboPrediction <- function(text, ngram = 3) {
     #clean input text
     text <- tolower(text)
     inputWords <- tail(unlist(strsplit(text, split = " ")), ngram)
