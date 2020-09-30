@@ -1,0 +1,82 @@
+---
+title: "Exploratory Analysis"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+```{r libraries}
+library(data.table); library(dplyr); library(scales); library(ggplot2)
+```
+
+### Introduction
+
+The ultimate aim of this project is to create an app to predict the next word in the sentence. In this document we will undertake some preliminary exploration of the corpus that we will use in this project. The corpus consists of blog posts, tweets, and news articles in the English language, collected from publically available sources by  a web crawler. It was accessed from the John Hopkins Coursera website. 
+
+In this exploratory analysis, we will examine the three different sources (blogs, tweets, and news, as above) that will make up our Corpus. This will allow us to understand the structure of this textual data, and any similarities or differences between teh sources that may inform our approach to building the predictive app.
+
+### Preliminary Exploration
+
+Once the data has been downloaded, we undertake some prelmininary exploration. Below we summarise the raw data, displaying the number of lines from each source, the most characters in a line, and the average number of characters in each line. 
+
+```{r include = FALSE}
+rm(list = ls())
+rawData <- fread(file.path("intermediateData", "rawData.csv"))
+```
+
+```{r summarise_raw_data}
+rawData %>%
+    group_by(type) %>%
+    summarise(`Number of lines` = n(),
+              `Total characters in Corpus` = sum(nchar(text)),
+              `Most characters in a line` = max(nchar(text)),
+              `average characters in a line` = round(mean(nchar(text))))
+```
+
+In total, the dataset has `r nrow(rawData)` lines. The most lines are founds in the twitter dataset, yet those lines are, on average, significantly shorter than both the news dataset and the blogs dataset. The most characters are found in the blogs datasets, which also has, on average, the most characters in a line.
+
+### Cleaning the data
+For the prediction app, we are only concerned with extracting words, so we clean the data to get rid of all other symbols (with the exception of apostrophies). We also get rid of words starting with "@" to get rid of twitter handles.  
+
+```{r read_cleaned_data, include = FALSE}
+rm(list = ls())
+monogramsFrequency <- fread(file.path("intermediateData", "monogramsFrequency.csv"))
+bigramsFrequency <- fread(file.path("intermediateData", "bigramsFrequency.csv"))
+trigramsFrequency <- fread(file.path("intermediateData", "trigramsFrequency.csv"))
+```
+
+### Extracting n-grams and visualisation
+We extract n-grams using the tidytext package, and visualise the frequency of individual ngrams to understand how words are distributed across the three data sources.
+
+#### Monograms
+
+We first look at the frequencies of single words (monograms). The most common words are not suprising - typically common English words including "and", "to", "a" "of", and the most common word across all three datasets - "the". This word represents around 5% or more of the words in both blogs and news articles, and around 3% of the words from twitter.
+
+Charting the most frequent words provides some insight into the relative distribution of words across these datasets. While the words that make up the top twenty are similar, their distributions are clearly different. The table below further illustrates this point. We document the number of unique word required in a frequency sorted dictionary to cover different percentages of all word instances in the dataset. We see that we need the fewest number of words to cover 50% of all word instances in the blogs dataset (105 words), which is almost half of the number of words required in the news dataset (191). When we increase the percentage of word instances to be covered to 95%, the numbers are relatively similar, and above that level the news dataset requires the lowest number of unique words.
+
+```{r examine_monograms}
+source("exploratory_analysis_helpers.R")
+plotGrams(monogramsFrequency)
+summaryNgrams(monogramsFrequency)
+```
+
+#### Bigrams and Trigrams
+
+We also examine the frequency of bigrams and trigrams. The first notable feature is that the larger the ngram, the larger the number of unique ngrams, and the smaller the frequency of any individual ngram. The most frequent bigram appears around a tenth of the time of the most frequent monogram, and the most frequent trigram a tenth of the time of the most frequent bigram. 
+
+The most freqent bigrams are made up of the most frequent monograms, and are consistent across the three data sources, with "of the" and "in the" the most common. We see similar distributional properties between the data sources as was observed with the monograms, where the news dataset requires more unique words to cover 50% of all word instances, but that property reverses itself as the percentage of all word instances to be covered increases. 
+
+The trigrams reveal a common phrase within the twitter data. The most frequent trigram is "thanks for the" which is a trigram not observed in the top twenty trigrams of either the blogs or news dataset (it is likely mostly followed by "follow"). There are many more trigrams than bigrams or monograms, and many more trigrams required to cover any percentile of all word instances than was true for bigrams of monograms. This is relevant as we think about creating a model, as the larger the ngram, the more data that will be required which may have an effect on the speed of our language prediction app.
+
+```{r plot_otherGrams}
+plotGrams(bigramsFrequency)
+plotGrams(trigramsFrequency)
+summaryNgrams(bigramsFrequency)
+summaryNgrams(trigramsFrequency)
+```
+
+### Creating a prediction algorithm
+
+We will use the ngrams to create our prediction model. Our approach will be based on Markov chains - i.e. the probability of the following word is only dependent on the previous "n" words as defined in the model. In particular, we will need to consider how to deal with unseen words in the corpus and thus smooth the probabilities across all possible word choices. We will consider several different algorithmic approaches to this challenge, specifically additive smoothing (Laplace and Lidstone smoothing), Good-Turing smoothing, Katz smoothing, Kneser-Ney smoothing and modified Kneser-Ney smothing as per Chen and Goodman (1998). 
