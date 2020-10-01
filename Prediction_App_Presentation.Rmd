@@ -1,0 +1,83 @@
+---
+title: "Word Prediction App"
+author: "TCrow"
+date: "01/10/2020"
+output: 
+    ioslides_presentation:
+        widescreen: true
+        smaller: true
+---
+<style>
+div.footnotes {
+  position: absolute;
+  bottom: 0;
+  margin-bottom: 10px;
+  width: 80%;
+  font-size: 0.6em;
+}
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    $('slide:not(.backdrop):not(.title-slide)').append('<div class=\"footnotes\">');
+
+    $('footnote').each(function(index) {
+      var text  = $(this).html();
+      var fnNum = (index+1).toString().sup();
+      $(this).html(text + fnNum);
+
+      var footnote   = fnNum + ': ' + $(this).attr('content') + '<br/>';
+      var oldContent = $(this).parents('slide').children('div.footnotes').html();
+      var newContent = oldContent + footnote;
+      $(this).parents('slide').children('div.footnotes').html(newContent);
+    });
+  });
+</script>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Summary
+
+The Word Prediction App allows the user to enter a sentence and returns the most likely next word(s). 
+
+- The users enters their sentence and selects the number of results/word predictions desired (from one to ten)
+- The app returns the words most likely predicted to follow the sentence, along with their estimated probability
+
+## How to use the app?
+
+- The app provides an input box for the user to input a sentence in the siderbar. Example: "The cat sat on the"
+- In the same sidebar, the user can choose the number of results to display. This ranges from one to ten answers.
+- To the right of the sidebar, the results are automatically displayed. In the below example we can see the three results.
+
+<center>
+![](WordPrediction/Prediction_app_picture.png){width=600}
+<cemter>
+
+## Methodology
+
+- The app relies on a Markov Chain. This means that the probability of next word is assumed to be only dependent on the preceeding ngram in the sentence
+- The app uses up to fourgrams (ngram where n = 4), so predicts the next word solely based on the proceeding three words in the sentence
+- To provide the best prediction, the app uses the modified Kneser-Ney smoothing algorithm (as presented in Chen and Goodman, <footnote content="Chen, Stanley F. and Joshua Goodman. 1998. An Empirical Study of Smoothing Techniques for Language Modeling. Harvard Computer Science Group Technical Report TR-10-98">1998</footnote>) 
+
+#### Data
+The data from which the probabilities are calculated come from a corpus of twitter, blogs, and news articles. This data was collected by web-crawler from publically available sources. It was provided by John Hopkins as part of the Coursera Data Science Capstone and was downloaded from the Coursera website.
+
+
+## Modified Kneser-Ney Smoothing
+An extension of absolute discounting, where the lower order distribution is not based on the number of occurences of a word, but  is based on the number of different words that it follows. 
+Mathematically the probability of a word given its ngram history is:
+$$p_{KN}(w_i|w_{i-n+1}^{i-1}) =
+                            \frac{c(w_{i-n+1}^i)-D(c(w_{i-n+1}^i))}{\sum_{w_i}x(w_{i-n+1}^i)} \\+\gamma(w_{i-n+1}^{i-1})p_{KN}(w_i|w_{i-n+2}^{i-1})$$
+
+- $c()$ is the absolute count (for highest order ngrams) or continuation count (for all other order ngrams)
+
+- $D()$ is a discount (based on the count) so that some probability is subtracted from the seen ngrams so that there is leftover probability for unseen ngrams
+
+- $\gamma$ corresponds to that leftover probability for unseen ngrams
+
+
